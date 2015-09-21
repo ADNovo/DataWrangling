@@ -64,31 +64,51 @@ def audit_key_types(filename):
     return keys
 
 def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
-    key_types = defaultdict(set)
-    for event, elem in ET.iterparse(filename, events=("start",)):
+    '''
+    Processes the map file and returns a dictionary with the values of the 'tag' 
+    attribute 'k' from 'node's and 'way's that are equal to 'key_type' and for
+    which 'audit_key_function' adds a key, value pair
+    '''
+    keys_to_check = defaultdict(set)
+    for event, elem in ET.iterparse(filename):
         if elem.tag == "node" or elem.tag == "way":
             for tag in elem.iter("tag"):
                 if tag.attrib['k'] == key_type:
-                    audit_key_function(key_types, tag.attrib['v'], expected_keys)
-    return dict(key_types)
+                    audit_key_function(keys_to_check, tag.attrib['v'], expected_keys)
+    return dict(keys_to_check)
     
-def audit_street_type(key_types, street_name, expected_last_words):
+#Audit functions that require less than 3 parameters have 'placeholder's so that
+#the function 'audit_key' can be used with any of them
+    
+def audit_street_type(keys_to_check, street_name, expected_last_words):
+    '''
+    Checks if the last word in 'street_name' is one of the 'expected_last_words'
+    If not adds the last word to the dictionary 'keys_to_check' as key and 
+    'street_name' as value
+    '''
     street_type_re = r'\b\S+\.?$'
     found = re.search(street_type_re, street_name, re.IGNORECASE)
     if found:
         street_type = found.group()
         if street_type not in expected_last_words:
-            key_types[street_type].add(street_name)
+            keys_to_check[street_type].add(street_name)
+            
+def audit_postcode(keys_to_check, postcode, expected_postcode_re):
+    '''
+    Checks if the 'postcode' matches the pattern in 'expected_postcode_re'.
+    If not adds it to the dictionary 'keys_to_check' as both key and value
+    ''' 
+    found = re.search(expected_postcode_re, postcode)
+    if found == None:
+        keys_to_check[postcode].add(postcode) 
 
-def audit_postcode_format(key_types, postcode, placeholder):
-        postcode_format_re = r'^[0-9]{5}$'
-        found = re.search(postcode_format_re, postcode)
-        if found == None:
-            key_types[postcode].add(postcode) 
-
-def audit_state_name(key_types, state_name, expected_state_name):
-        if state_name != expected_state_name:
-            key_types[state_name].add(state_name)
+def audit_state_name(keys_to_check, state_name, expected_state_name):
+    '''
+    Checks if the state_name is equal to the 'expected_state_name'.
+    If not adds it to the dictionary 'keys_to_check' as both key and value
+    '''
+    if state_name != expected_state_name:
+        keys_to_check[state_name].add(state_name)
     
 if __name__ == "__main__":
     
@@ -100,8 +120,12 @@ if __name__ == "__main__":
     #Count each 'tag' attribute 'k' in 'node' or 'way' that starts with 'addr:'
     pprint.pprint(count_keys(filename, "addr:"))
     
+    #Audit postcode format (Nevada postcodes start with 889-891)
+    expected_postcode_re = r'^(889|890|891)[0-9]{2}$'
+    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re))
+    
+    #Audit street types
     expected_last_words = ["Street", "Avenue", "Road", "Boulevard", "Drive", "Highway",
                             "Lane", "Parkway", "Way", "Court", "Circle"]               
                             
     pprint.pprint(audit_key(filename, "addr:street", audit_street_type, expected_last_words))
-    
