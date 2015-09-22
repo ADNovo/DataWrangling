@@ -7,7 +7,7 @@ from collections import defaultdict
 def count_tags(filename):
     '''
     Processes the map file and returns a dictionary with the tags in the file 
-    as keys and the number of times each is present
+    as keys and the number of times each is present.
     ''' 
     counter = defaultdict(int)
     
@@ -20,9 +20,9 @@ def count_tags(filename):
 def count_keys(filename, filter_key = None):
     '''
     Processes the map file and returns a dictionary with the values of a 'tag' attribute 'k' 
-    of 'node's and 'way's in the file as keys and the number of times each is present
+    of 'node's and 'way's in the file as keys and the number of times each is present.
     If the string 'filter_key' is not 'None', filters the 'tag' attribute 'k' keys to the
-    ones that contain the string 'filter_key'
+    ones that contain the string 'filter_key'.
     '''
     counter = defaultdict(int)
     
@@ -44,7 +44,7 @@ def audit_key_types(filename):
     Processes the map file and divides the values of 'tag' attributes 'k' of 'node's and 'way's 
     in the file in four groups: lower case without colon ('lower'), lower case with colon 
     ('lower_colon'), with problematic characters ('problemchars' and other ('other').
-    Returns a dictionary with the group labels as keys and the number of times each is present
+    Returns a dictionary with the group labels as keys and the number of times each is present.
     '''
     
     lower = r'^([a-z]|_)*$' 
@@ -78,7 +78,7 @@ def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
     '''
     Processes the map file and returns a dictionary with the values of the 'tag' 
     attribute 'k' of 'node's and 'way's that are equal to 'key_type' and for
-    which 'audit_key_function' adds a key, value pair
+    which 'audit_key_function' adds a key, value pair.
     '''
     keys_to_check = defaultdict(set)
     for event, elem in ET.iterparse(filename):
@@ -97,7 +97,7 @@ def audit_street_type(keys_to_check, street_name, expected_last_words):
     '''
     Checks if the last word in 'street_name' is one of the 'expected_last_words'
     If not adds the last word to the dictionary 'keys_to_check' as key and 
-    'street_name' as value
+    'street_name' as value.
     '''
     street_type_re = r'\b\S+\.?$'
     found = re.search(street_type_re, street_name, re.IGNORECASE)
@@ -110,7 +110,7 @@ def audit_street_type(keys_to_check, street_name, expected_last_words):
 def audit_postcode(keys_to_check, postcode, expected_postcode_re):
     '''
     Checks if the 'postcode' matches the pattern in 'expected_postcode_re'.
-    If not adds it to the dictionary 'keys_to_check' as both key and value
+    If not adds it to the dictionary 'keys_to_check' as both key and value.
     ''' 
     found = re.search(expected_postcode_re, postcode)
     if found == None:
@@ -120,7 +120,7 @@ def audit_postcode(keys_to_check, postcode, expected_postcode_re):
 def audit_state_name(keys_to_check, state_name, expected_state_name):
     '''
     Checks if the state_name is equal to the 'expected_state_name'.
-    If not adds it to the dictionary 'keys_to_check' as both key and value
+    If not adds it to the dictionary 'keys_to_check' as both key and value.
     '''
     if state_name != expected_state_name:
         keys_to_check[state_name].add(state_name)
