@@ -2,12 +2,14 @@ import xml.etree.cElementTree as ET
 import re
 import json
           
+          
 def clean_street_name(street_name, mapping):
     street_type_re = r'\b\S+\.?$'
     found = re.search(street_type_re, street_name, re.IGNORECASE).group()
     street_name = re.sub(found+'$', mapping[found], street_name)
 
     return street_name
+
 
 def shape_element(element):
     address_keep_re = r'^addr:([a-z]|_)*$'
@@ -65,11 +67,13 @@ def shape_element(element):
         if address_dict.keys() != []:
             node["address"] = address_dict
         if refs_list != []:
-            node["node_refs"] = refs_list        
+            node["node_refs"] = refs_list  
+            
         return node
         
     else:
         return None
+
 
 def process_map(filename, db):
     file_out = "{0}.json".format(filename)
