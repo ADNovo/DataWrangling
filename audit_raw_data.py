@@ -47,7 +47,7 @@ def audit_key_types(filename):
     keys = {"lower": 0, "lower_colon": 0, "problemchars": 0, "other": 0}
     
     for event, elem in ET.iterparse(filename):
-        if elem.tag == "tag":
+        if elem.tag == "node" or elem.tag == "way":
             for tag in elem.iter("tag"):
                 k_type = tag.attrib['k']
                 
