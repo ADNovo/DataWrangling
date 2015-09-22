@@ -19,10 +19,10 @@ def count_tags(filename):
         
 def count_keys(filename, filter_key = None):
     '''
-    Processes the map file and returns a dictionary with the values of a 'tag' attribute 'k' 
+    Processes the map file and returns a dictionary with the values of the 'tag' attribute 'k' 
     of 'node's and 'way's in the file as keys and the number of times each is present.
     If the string 'filter_key' is not 'None', filters the 'tag' attribute 'k' keys to the
-    ones that contain the string 'filter_key'.
+    ones that match the pattern 'filter_key'.
     '''
     counter = defaultdict(int)
     
@@ -30,12 +30,28 @@ def count_keys(filename, filter_key = None):
         if elem.tag == "node" or elem.tag == "way":
             for tag in elem.iter("tag"):
                 if filter_key: 
-                    if filter_key in tag.attrib['k']:
+                    if re.search(filter_key, tag.attrib['k']):
                         counter[tag.attrib['k']] += 1
                 else:
                     counter[tag.attrib['k']] += 1                   
                            
     return dict(counter)
+    
+def get_values(filename, filter_key):
+    '''
+    Processes the map file and returns a dictionary with the 'tag' attribute 'k' 
+    of 'node's and 'way's in the file that match the pattern 'filter_key' as keys 
+    and the related 'tag' attribute 'v' as values.
+    '''
+    values = defaultdict(set)
+    
+    for event, elem in ET.iterparse(filename):
+        if elem.tag == "node" or elem.tag == "way":
+            for tag in elem.iter("tag"):
+                if re.search(filter_key, tag.attrib['k']):
+                    values[tag.attrib['k']].add(tag.attrib['v'])
+                                                      
+    return dict(values)
     
     
 def audit_key_types(filename):
@@ -130,8 +146,11 @@ if __name__ == "__main__":
     #Count each tag
     pprint.pprint(count_tags(filename)) 
     
-    #Count each 'tag' attribute 'k' in 'node' or 'way' that starts with 'addr:'
-    pprint.pprint(count_keys(filename, "addr:"))
+    #Count each 'tag' attribute 'k' in 'node' or 'way' that contain the string 'addr'
+    pprint.pprint(count_keys(filename, '^addr'))
+    
+    #Check 'tag' attribute 'v' of 'tag' attribute 'k' = 'address'
+    pprint.pprint(get_values(filename, r'^address$'))
     
     #Audit postcode format (Nevada postcodes start with 889-891)
     expected_postcode_re = r'^(889|890|891)[0-9]{2}$'
