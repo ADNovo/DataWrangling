@@ -70,18 +70,19 @@ def clean_element(element):
           return element
           
           
-def clean_street_name(street_name, cleaning_patern):
+def clean_street_name(element, cleaning_patern):
     '''
-    If the last word of 'street_name' is a key in 'cleaning_patern', returns
-    'street_name' with its last word replaced by the corresponding
-    value in 'cleaning_patern'
+    If element has an address with street, checks if the last word of 
+    the street name is a key in 'cleaning_patern'. If it is, replaces 
+    that word by the corresponding value in 'cleaning_patern'
     '''
-    street_type_re = r'\b\S+\.?$'
-    found = re.search(street_type_re, street_name, re.IGNORECASE).group()
-    street_name = re.sub(found+'$', cleaning_patern[found], street_name)
+    if 'address' in element.keys():
+          if 'street' in element['address'].keys():
+                    street_name = address_dict['street']
+                    street_type_re = r'\b\S+\.?$'
+                    found = re.search(street_type_re, street_name, re.IGNORECASE).group()
+                    element['address']['street'] = re.sub(found+'$', cleaning_patern[found], street_name)
 
-    return street_name
-    
     
 def process_map(filename, db):
     file_out = "{0}.json".format(filename)
