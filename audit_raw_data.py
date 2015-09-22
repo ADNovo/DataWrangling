@@ -20,7 +20,7 @@ def count_tags(filename):
 def count_keys(filename, filter_key = None):
     '''
     Processes the map file and returns a dictionary with the values of a 'tag' attribute 'k' 
-    from 'node's and 'way's in the file as keys and the number of times each is present
+    of 'node's and 'way's in the file as keys and the number of times each is present
     If the string 'filter_key' is not 'None', filters the 'tag' attribute 'k' keys to the
     ones that contain the string 'filter_key'
     '''
@@ -39,6 +39,13 @@ def count_keys(filename, filter_key = None):
     
     
 def audit_key_types(filename):
+    
+    '''
+    Processes the map file and divides the values of 'tag' attributes 'k' of 'node's and 'way's 
+    in the file in four groups: lower case without colon ('lower'), lower case with colon 
+    ('lower_colon'), with problematic characters ('problemchars' and other ('other').
+    Returns a dictionary with the group labels as keys and the number of times each is present
+    '''
     
     lower = r'^([a-z]|_)*$' 
     lower_colon = r'^([a-z]|_)*:([a-z]|_)*$'
@@ -70,7 +77,7 @@ def audit_key_types(filename):
 def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
     '''
     Processes the map file and returns a dictionary with the values of the 'tag' 
-    attribute 'k' from 'node's and 'way's that are equal to 'key_type' and for
+    attribute 'k' of 'node's and 'way's that are equal to 'key_type' and for
     which 'audit_key_function' adds a key, value pair
     '''
     keys_to_check = defaultdict(set)
