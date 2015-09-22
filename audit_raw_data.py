@@ -73,25 +73,6 @@ def audit_key_types(filename):
         
     return keys
 
-
-def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
-    '''
-    Processes the map file and returns a dictionary with the values of the 'tag' 
-    attribute 'k' of 'node's and 'way's that are equal to 'key_type' and for
-    which 'audit_key_function' adds a key, value pair.
-    '''
-    keys_to_check = defaultdict(set)
-    for event, elem in ET.iterparse(filename):
-        if elem.tag == "node" or elem.tag == "way":
-            for tag in elem.iter("tag"):
-                if tag.attrib['k'] == key_type:
-                    audit_key_function(keys_to_check, tag.attrib['v'], expected_keys)
-                    
-    return dict(keys_to_check)
-    
-    
-#Audit functions that require less than 3 parameters have 'placeholder's so that
-#the function 'audit_key' can be used with any of them
     
 def audit_street_type(keys_to_check, street_name, expected_last_words):
     '''
@@ -124,6 +105,22 @@ def audit_state_name(keys_to_check, state_name, expected_state_name):
     '''
     if state_name != expected_state_name:
         keys_to_check[state_name].add(state_name)
+        
+
+def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
+    '''
+    Processes the map file and returns a dictionary with the values of the 'tag' 
+    attribute 'k' of 'node's and 'way's that are equal to 'key_type' and for
+    which 'audit_key_function' adds a key, value pair.
+    '''
+    keys_to_check = defaultdict(set)
+    for event, elem in ET.iterparse(filename):
+        if elem.tag == "node" or elem.tag == "way":
+            for tag in elem.iter("tag"):
+                if tag.attrib['k'] == key_type:
+                    audit_key_function(keys_to_check, tag.attrib['v'], expected_keys)
+                    
+    return dict(keys_to_check)
     
     
 if __name__ == "__main__":
