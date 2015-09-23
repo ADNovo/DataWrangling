@@ -110,18 +110,19 @@ def audit_street_type(keys_to_check, street_name, expected_dict):
 def audit_postcode(keys_to_check, postcode, expected_postcode_re):
     '''
     Checks if the 'postcode' matches the regex expression in 'expected_postcode_re'.
-    If not adds it to the dictionary 'keys_to_check' as both key and value.
+    If not adds it to the dictionary 'keys_to_check' key and increases the number
+    it is present in the file (value) by 1.
     ''' 
     found = re.search(expected_postcode_re, postcode)
     if found == None:
-        keys_to_check[postcode].add(postcode) 
+        keys_to_check[postcode] += 1
 
 
 def audit_state_name(keys_to_check, state_name, expected_state_name):
     '''
     Checks if the state_name is equal to the 'expected_state_name'.
     If not adds it to the dictionary 'keys_to_check' as key and increases the number
-    it is present (value) by 1.
+    it is present in the file (value) by 1.
     '''
     if state_name != expected_state_name:
         keys_to_check[state_name] += 1
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     
     #Audit postcode format (Nevada postcodes start with 889-891)
     expected_postcode_re = r'^(889|890|891)[0-9]{2}$'
-    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re, set))
+    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re, int))
     
     #Audit street types
     expected_dict = {r'\b\S+\.?$': ["Street", "Avenue", "Road", "Boulevard", "Drive", "Highway",
