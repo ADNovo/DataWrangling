@@ -22,7 +22,7 @@ def count_keys(filename, filter_key = None):
     Processes the map file and returns a dictionary with the values of the 'tag' attribute 'k' 
     of 'node's and 'way's in the file as keys and the number of times each is present.
     If the string 'filter_key' is not 'None', filters the 'tag' attribute 'k' keys to the
-    ones that match the pattern 'filter_key'.
+    ones that match the regex expression 'filter_key'.
     '''
     counter = defaultdict(int)
     
@@ -37,19 +37,21 @@ def count_keys(filename, filter_key = None):
                            
     return dict(counter)
     
-def get_values(filename, filter_key):
+def get_values(filename, filter_key = None):
     '''
     Processes the map file and returns a dictionary with the 'tag' attribute 'k' 
-    of 'node's and 'way's in the file that match the pattern 'filter_key' as keys 
-    and the related 'tag' attribute 'v' as values.
+    of 'node's and 'way's in the file as keys and the related 'tag' attribute 'v' as values.
+    If the string 'filter_key' is not 'None', filters the 'tag' attribute 'k' keys to the
+    ones that match the regex expression 'filter_key'.
     '''
     values = defaultdict(set)
     
     for event, elem in ET.iterparse(filename):
         if elem.tag == "node" or elem.tag == "way":
             for tag in elem.iter("tag"):
-                if re.search(filter_key, tag.attrib['k']):
-                    values[tag.attrib['k']].add(tag.attrib['v'])
+                if filter_key: 
+                    if re.search(filter_key, tag.attrib['k']):
+                        values[tag.attrib['k']].add(tag.attrib['v'])
                                                       
     return dict(values)
     
@@ -90,23 +92,24 @@ def audit_key_types(filename):
     return keys
 
     
-def audit_street_type(keys_to_check, street_name, expected_last_words):
+def audit_street_type(keys_to_check, street_name, expected_dict):
     '''
-    Checks if the last word in 'street_name' is one of the 'expected_last_words'
-    If not adds the last word to the dictionary 'keys_to_check' as key and 
-    'street_name' as value.
+    Checks if each regex expression in 'expected_dict' keys can match a string
+    in 'street_name'. If it does, checks if that string is in the corresponding
+    list in 'expected_dict' value. If it isn't, adds the string to the dictionary 
+    'keys_to_check' as key and 'street_name' as value.
     '''
-    street_type_re = r'\b\S+\.?$'
-    found = re.search(street_type_re, street_name, re.IGNORECASE)
-    if found:
-        street_type = found.group()
-        if street_type not in expected_last_words:
-            keys_to_check[street_type].add(street_name)
+    for regex in expected_dict keys():
+        found = re.search(regex, street_name, re.IGNORECASE)
+        if found:
+            street_type = found.group()
+            if street_type not in expected_dict[regex]:
+                keys_to_check[street_type].add(street_name)
             
             
 def audit_postcode(keys_to_check, postcode, expected_postcode_re):
     '''
-    Checks if the 'postcode' matches the pattern in 'expected_postcode_re'.
+    Checks if the 'postcode' matches the regex expression in 'expected_postcode_re'.
     If not adds it to the dictionary 'keys_to_check' as both key and value.
     ''' 
     found = re.search(expected_postcode_re, postcode)
@@ -117,19 +120,21 @@ def audit_postcode(keys_to_check, postcode, expected_postcode_re):
 def audit_state_name(keys_to_check, state_name, expected_state_name):
     '''
     Checks if the state_name is equal to the 'expected_state_name'.
-    If not adds it to the dictionary 'keys_to_check' as both key and value.
+    If not adds it to the dictionary 'keys_to_check' as key and increases the number
+    it is present (value) by 1.
     '''
     if state_name != expected_state_name:
-        keys_to_check[state_name].add(state_name)
+        keys_to_check[state_name] += 1
         
 
-def audit_key(filename, key_type, audit_key_function, expected_keys = ''):
+def audit_key(filename, key_type, audit_key_function, expected_keys, dict_value_type):
     '''
     Processes the map file and returns a dictionary with the values of the 'tag' 
     attribute 'k' of 'node's and 'way's that are equal to 'key_type' and for
-    which 'audit_key_function' adds a key, value pair.
+    which 'audit_key_function' adds a key, value pair (value is int or set
+    depending on 'dict_value_type'.
     '''
-    keys_to_check = defaultdict(set)
+    keys_to_check = defaultdict(dict_value_type)
     for event, elem in ET.iterparse(filename):
         if elem.tag == "node" or elem.tag == "way":
             for tag in elem.iter("tag"):
@@ -147,17 +152,17 @@ if __name__ == "__main__":
     pprint.pprint(count_tags(filename)) 
     
     #Count each 'tag' attribute 'k' in 'node' or 'way' that contain the string 'addr'
-    pprint.pprint(count_keys(filename, '^addr'))
+    pprint.pprint(count_keys(filename, r'^addr'))
     
     #Check 'tag' attribute 'v' of 'tag' attribute 'k' = 'address'
     pprint.pprint(get_values(filename, r'^address$'))
     
     #Audit postcode format (Nevada postcodes start with 889-891)
     expected_postcode_re = r'^(889|890|891)[0-9]{2}$'
-    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re))
+    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re, set))
     
     #Audit street types
-    expected_last_words = ["Street", "Avenue", "Road", "Boulevard", "Drive", "Highway",
-                            "Lane", "Parkway", "Way", "Court", "Circle"]               
+    expected_dict = {r'\b\S+\.?$': ["Street", "Avenue", "Road", "Boulevard", "Drive", "Highway",
+                            "Lane", "Parkway", "Way", "Court", "Circle"]}               
                             
-    pprint.pprint(audit_key(filename, "addr:street", audit_street_type, expected_last_words))
+    pprint.pprint(audit_key(filename, "addr:street", audit_street_type, expected_dict, set))
