@@ -67,46 +67,7 @@ def shape_element(element):
     else:
         return None
         
-        
-def clean_postcode(element, cleaning_pattern):
-    '''
-    
-    '''
-    if 'address' in element.keys():
-        if 'postcode' in element['address'].keys():
-            postcode = element['address']['postcode']
-            clean_postcode = re.search(cleaning_pattern['re_expression'], postcode).group()
-            
-            if 'state' not in element['address'].keys() and 'state' in cleaning_pattern.keys():
-                for state in cleaning_pattern['state']:
-                    if state in postcode:
-                        element['address']['state'] = state    
-           
-            element['address']['postcode'] = clean_postcode
-    
-    return element
-    
-       
-def clean_street_name(element, cleaning_pattern):
-    '''
-    If element has an address with street, checks if the last word of 
-    the street name is a key in 'cleaning_patern'. If it is, replaces 
-    that word by the corresponding value in 'cleaning_patern'
-    '''
-    pass
-   
- 
-def clean_element(element, cleaning_functions_dict, cleaning_pattern_dict):
-      
-    if set(cleaning_functions_dict.keys()) != set(cleaning_pattern_dict.keys()):
-        raise ValueError
-                           
-    for key in cleaning_functions_dict.keys():
-        element = cleaning_functions_dict[key](element, cleaning_pattern_dict[key])
-    
-    return element
-    
-    
+
 def clean_address(element):
     if 'address' in element.keys():
         if type(element['address']) == str:
@@ -116,6 +77,45 @@ def clean_address(element):
                                     'city': 'Las Vegas', 
                                     'state': 'NV',
                                     'postcode': '89169'}
+    return element   
+    
+    
+def add_state(element, state_list):
+          
+    if 'state' not in element['address'].keys() and 'postcode' in element['address'].keys():
+          for state in state_list:
+                    if state in element['address']['postcode']:
+                        element['address']['state'] = state  
+                        
+    return element
+
+
+def clean_postcode(element, cleaning_pattern):
+
+    if 'address' in element.keys():
+        if 'postcode' in element['address'].keys():
+            postcode = element['address']['postcode']
+            clean_postcode = re.search(cleaning_pattern, postcode).group()
+            element['address']['postcode'] = clean_postcode
+    
+    return element
+    
+   
+def clean_street_name(element, cleaning_pattern):
+    '''
+    If element has an address with street, checks if the last word of 
+    the street name is a key in 'cleaning_patern'. If it is, replaces 
+    that word by the corresponding value in 'cleaning_patern'
+    '''
+    pass
+   
+ 
+def clean_element(element):
+    
+    element = clean_address(element)
+    element = add_state(element, ['NV', 'Nevada')
+    element = clean_postcode(element, r'(889|890|891)[0-9]{2}')
+    
     return element
     
              
@@ -125,21 +125,11 @@ def process_map(filename, cleaning_functions_dict = {}, cleaning_pattern_dict = 
         for event, element in ET.iterparse(filename):
             json_elem = shape_element(element)
             if json_elem:
-                if before_clean != None:
-                    json_elem = before_clean(json_elem)
-                clean_json_elem = clean_element(json_elem, cleaning_functions_dict, cleaning_pattern_dict)
+                clean_json_elem = clean_element(json_elem)
                 w.write(json.dumps(clean_json_elem, indent=2)+"\n")
                 
                 
 if __name__ == "__main__":
     
     filename = 'las_vegas_nevada.osm'
-    
-    cleaning_functions_dict = {'address_postcode': clean_postcode}
-    
-    clean_pattern_address_postcode = {'re_expression': r'(889|890|891)[0-9]{2}',
-                                        'state': ['NV', 'Nevada']}
-    
-    cleaning_pattern_dict = {'address_postcode': clean_pattern_address_postcode}
-    
-    process_map(filename, cleaning_functions_dict, cleaning_pattern_dict, clean_address)
+    process_map(filename)
