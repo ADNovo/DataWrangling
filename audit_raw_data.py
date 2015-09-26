@@ -99,7 +99,7 @@ def audit_street_type(keys_to_check, street_name, expected_dict):
     list in 'expected_dict' value. If it isn't, adds the string to the dictionary 
     'keys_to_check' as key and 'street_name' as value.
     '''
-    for regex in expected_dict keys():
+    for regex in expected_dict.keys():
         found = re.search(regex, street_name, re.IGNORECASE)
         if found:
             street_type = found.group()
@@ -107,25 +107,25 @@ def audit_street_type(keys_to_check, street_name, expected_dict):
                 keys_to_check[street_type].add(street_name)
             
             
-def audit_postcode(keys_to_check, postcode, expected_postcode_re):
+def audit_field_pattern(keys_to_check, field_value, expected_field_re):
     '''
-    Checks if the 'postcode' matches the regex expression in 'expected_postcode_re'.
+    Checks if the 'field_value' matches the regex expression in ' expected_field_re'.
     If not adds it to the dictionary 'keys_to_check' key and increases the number
     it is present in the file (value) by 1.
     ''' 
-    found = re.search(expected_postcode_re, postcode)
+    found = re.search(expected_field_re, field_value)
     if found == None:
-        keys_to_check[postcode] += 1
+        keys_to_check[field_value] += 1
+        
 
-
-def audit_state_name(keys_to_check, state_name, expected_state_name):
+def audit_field_value(keys_to_check, field_value, expected_field_value):
     '''
-    Checks if the state_name is equal to the 'expected_state_name'.
+    Checks if the 'field_value' is equal to the 'expected_field_value'.
     If not adds it to the dictionary 'keys_to_check' as key and increases the number
     it is present in the file (value) by 1.
     '''
-    if state_name != expected_state_name:
-        keys_to_check[state_name] += 1
+    if field_value != expected_field_value:
+        keys_to_check[field_value] += 1
         
 
 def audit_key(filename, key_type, audit_key_function, expected_keys, dict_value_type):
@@ -158,12 +158,20 @@ if __name__ == "__main__":
     #Check 'tag' attribute 'v' of 'tag' attribute 'k' = 'address'
     pprint.pprint(get_values(filename, r'^address$'))
     
-    #Audit postcode format (Nevada postcodes start with 889-891)
-    expected_postcode_re = r'^(889|890|891)[0-9]{2}$'
-    pprint.pprint(audit_key(filename, "addr:postcode", audit_postcode, expected_postcode_re, int))
-    
-    #Audit street types
+    #Audit street types to check if the last word is one in the following dictionary values
     expected_dict = {r'\b\S+\.?$': ["Street", "Avenue", "Road", "Boulevard", "Drive", "Highway",
                             "Lane", "Parkway", "Way", "Court", "Circle"]}               
                             
     pprint.pprint(audit_key(filename, "addr:street", audit_street_type, expected_dict, set))
+    
+    #Audit postcode to check if it is a 5-digit number starting with 889 or 89 
+    pprint.pprint(audit_key(filename, "addr:postcode", audit_field_pattern, r'(^889[0-9]{2}$)|(^89[0-9]{3}$)', int))
+    
+    #Audit state to check if it matches "Nevada"    
+    pprint.pprint(audit_key(filename, "addr:state", audit_field_value, "Nevada", int))
+    
+    #Audit country to check if it matches "USA"
+    pprint.pprint(audit_key(filename, "addr:country", audit_field_value, "USA", int))
+    
+    #Audit housenumber to check if it is a number with between 1 and 4 digits
+    pprint.pprint(audit_key(filename, "addr:housenumber", audit_field_pattern, r'(^[0-9]{1,5}$)', int))  
