@@ -33,6 +33,4 @@ if __name__ == "__main__":
     
     db = database('osm', 'lasvegas')
     
-    db.search_one()
-    
     db.aggregation([{'$group': {'_id': '# nodes or ways', 'count': {'$sum': 1}}}])
