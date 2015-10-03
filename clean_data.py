@@ -17,7 +17,6 @@ class map_element(object):
         refs_list = []
         
         if elem.tag == "node" or elem.tag == "way":
-            json_elem["type"] = elem.tag
             for tag in elem.iter("tag"):
                 k = tag.attrib['k']
                 if re.search(problemchars, k):
@@ -28,6 +27,8 @@ class map_element(object):
                     address_dict[sub_key] = tag.attrib['v']
                 elif re.search(address_skip_re, k):
                     continue
+                elif k =='type':
+                    json_elem['location_type'] = tag.attrib['v']
                 else:
                     json_elem[k] = tag.attrib['v']
                     
@@ -61,8 +62,10 @@ class map_element(object):
                 json_elem["address"] = address_dict
             if refs_list != []:
                 json_elem["node_refs"] = refs_list  
-               
+            json_elem["type"] = elem.tag
+            
             self.element = json_elem            
+        
         else:
             self.element = None
             
@@ -95,13 +98,13 @@ class map_element(object):
                 self.element['address'] = replace_mapping['address']
                 
             elif field in self.element['address'].keys():
-                field = self.element['address'][field]
+                field_value = self.element['address'][field]
                 
                 for key in replace_mapping.keys():
-                    expression = re.search(key, field, re.IGNORECASE)
+                    expression = re.search(key, field_value, re.IGNORECASE)
                     if expression:
-                        field = re.sub(expression.group(), replace_mapping[key], field)
-                
+                        self.element['address'][field] = re.sub(expression.group(), replace_mapping[key], field_value)
+                        
     def limit_field(self, field, limit_pattern):
 
         if 'address' in self.element.keys():
@@ -158,16 +161,19 @@ def clean(mapElem):
     #Clean 'postcode', reducing it to a 5-digit number starting with 889 or 89 (Nevada postal codes)    
     mapElem.limit_field('postcode', r'(889[0-9]{2})|(89[0-9]{3})')
     #Clean 'state', expanding all abbreviations in the dictionary to the respective full word
-    mapElem.replace_in_field('state', {'AZ': 'Arizona', 'CA': 'California','NV': 'Nevada'})
+    mapElem.replace_in_field('state', {r'^AZ$': 'Arizona', r'^CA$': 'California', r'^NV$': 'Nevada'})
     #Clean 'country', expanding the abbreviation 'US' to 'USA
-    mapElem.replace_in_field('country', {'US': 'USA'})
+    mapElem.replace_in_field('country', {r'^US$': 'USA'})
+    #Clean 'city', expanding abbreviations and capitalizing city names
+    mapElem.replace_in_field('city', {r'^Las Vagas$': 'Las Vegas', r'^las vegas$': 'Las Vegas', 
+                                      r'^Las vegas$': 'Las Vegas', r'^Nellis AFB$':'Nellis Air Force Base'})
     #Clean 'postcode', reducing it to a number with between 1 and 5 digits
     mapElem.limit_field('housenumber', r'([0-9]{1,5})')                                
     #Clean 'suite', removing the "Suite" expression, as well as its abbreviations
     mapElem.remove_from_field('suite', r'Suite|Ste')
     #Clean 'door', removing the character "#"
     mapElem.remove_from_field('door', r'#')
-              
+
 if __name__ == "__main__":
     
     mapfile = map_file('las_vegas_nevada.osm')    
