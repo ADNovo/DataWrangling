@@ -1,55 +1,52 @@
 import pprint
 from pymongo import MongoClient
 
-class database(object):
+class db_collection(object):
     
     def __init__(self, database_name, collection_name):
         
        self.client = MongoClient('localhost:27017')
-       self.db = self.client[database_name][collection_name]
+       self.collection = self.client[database_name][collection_name]
        
     def disconnect(self):
         
         return self.client.close()
-       
-    def search_one(self, criteria_dict = {}):
+    
+    def get_collection(self):
         
-        pprint.pprint(self.db.find_one(criteria_dict))
-       
-    def search(self, criteria_dict = {}):
-        
-        cursor = self.db.find(criteria_dict)
-        
-        for entry in cursor:
-            pprint.pprint(entry)
+        return self.collection
         
     def aggregation(self, pipeline):
         
-        cursor = self.db.aggregate(pipeline)
+        cursor = self.collection.aggregate(pipeline)
         
-        for entry in cursor:
-            pprint.pprint(entry)
+        return [result for result in  cursor]
         
 if __name__ == "__main__":
     
     #mongoimport --db osm --collection lasvegas --drop --file las_vegas_nevada.json   
     
-    db = database('osm', 'lasvegas')
+    db = db_collection('osm', 'lasvegas')
     
-    db.aggregation([{'$group': {'_id': '# nodes or ways', 'count': {'$sum': 1}}}])
+    print(db.get_collection().find().count()) 
     
-    db.aggregation([{'$match': {'address.state': {'$exists': 1}}}, 
-                    {'$group': {'_id':'$address.state', 'count': {'$sum': 1}}}, 
-                    {'$sort': {'count': -1}}])
+    pprint.pprint(db.aggregation([{'$group': {'_id':'$type', 'count': {'$sum': 1}}}]))
+    
+    pprint.pprint(db.aggregation([{'$group': {'_id':'overall', 'unique_users': {'$addToSet': '$created.user'}}},
+                                  {'$project': {'number_unique_users': {'$size': '$unique_users'}}}])
+                                  
+    pprint.pprint(db.aggregation([{'$match': {'address.state': {'$exists': 1}}}, 
+                                  {'$group': {'_id':'$address.state', 'count': {'$sum': 1}}}, 
+                                  {'$sort': {'count': -1}}]))
                     
-    db.aggregation([{'$match': {'address.city': {'$exists': 1}, 'address.state': 'Nevada'}}, 
-                    {'$group': {'_id':'$address.city', 'count': {'$sum': 1}}}, 
-                    {'$sort': {'count': -1}}]) 
+    pprint.pprint(db.aggregation([{'$match': {'address.city': {'$exists': 1}, 'address.state': 'Nevada'}}, 
+                                  {'$group': {'_id':'$address.city', 'count': {'$sum': 1}}}, 
+                                  {'$sort': {'count': -1}}])) 
                     
-    db.aggregation([{'$match': {'address.postcode': {'$exists': 1}, 
-                                'address.city': 'Las Vegas', 'address.state': 'Nevada'}}, 
-                    {'$group': {'_id':'$address.postcode', 'count': {'$sum': 1}}}, 
-                    {'$sort': {'count': -1}},
-                    {'$limit': 5}])  
+    pprint.pprint(db.aggregation([{'$match': {'address.postcode': {'$exists': 1}, 
+                                   'address.city': 'Las Vegas', 'address.state': 'Nevada'}}, 
+                                  {'$group': {'_id':'$address.postcode', 'count': {'$sum': 1}}}, 
+                                  {'$sort': {'count': -1}},
+                                  {'$limit': 5}]))  
                     
     db.disconnect()
