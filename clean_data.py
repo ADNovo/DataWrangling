@@ -2,9 +2,14 @@ import re
 from audit_raw_data import *
 
 class map_element(object):
-    
+    '''
+    Map element class
+    '''    
     def __init__(self, elem):
-
+        '''
+        Transforms the element data structure into a dictionary of dictionaries,
+        compatible with json.
+        '''
         address_keep_re = r'^addr:([a-z]|_)*$'
         address_skip_re = r'^addr:street:([a-z]|_)*$'
         problemchars = r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]'
@@ -17,42 +22,51 @@ class map_element(object):
         refs_list = []
         
         if elem.tag == "node" or elem.tag == "way":
+            #Deals with tags 'tag'
             for tag in elem.iter("tag"):
                 k = tag.attrib['k']
+                #Fields with problematic characters are discarded
                 if re.search(problemchars, k):
                     continue
+                #Address fields that are sub-fields are kept
                 elif re.search(address_keep_re, k):
                     sub_key_re = r':([a-z]|_)*$'
                     sub_key = re.search(sub_key_re, k).group()[1:]
                     address_dict[sub_key] = tag.attrib['v']
+                #Address fields that are sub-sub-fields are discarded
                 elif re.search(address_skip_re, k):
                     continue
+                #'type' fields are relocated to 'location_type' fields to avoid
+                #conflicts down the transformation
                 elif k =='type':
                     json_elem['location_type'] = tag.attrib['v']
                 else:
                     json_elem[k] = tag.attrib['v']
-                    
+            #Deals with remaining tags    
             for tag in elem.iter():
-                attributes_dict = tag.attrib
-                for key in  attributes_dict.keys():
+                for key in tag.attrib.keys():
+                    #Deals with top level fields 
                     if key in elem.attrib.keys():
                         if key in created_list:
-                            created_dict[key] =  attributes_dict[key]
+                            created_dict[key] = tag.attrib[key]
                         elif key == 'lat':
-                            pos_list[0] = float(attributes_dict[key])
+                            pos_list[0] = float(tag.attrib[key])
                         elif key == 'lon':
-                            pos_list[1] = float(attributes_dict[key])
+                            pos_list[1] = float(tag.attrib[key])
                         else:
-                            json_elem[key] = attributes_dict[key]                        
+                            json_elem[key] = tag.attrib[key]                        
+                    #Deals with second level fields
                     else:
+                        #Skips tags 'tag' as they were already dealt with
                         if key == 'k' or key == 'v':
                             continue
+                        #Skips fields with problematic chars as before
                         elif re.search(problemchars, key):
                             continue
                         elif key == 'ref':
-                            refs_list.append(attributes_dict[key])
+                            refs_list.append(tag.attrib[key])
                         else:
-                            json_elem[key] = attributes_dict[key]  
+                            json_elem[key] = tag.attrib[key]  
                             
             if created_dict.keys() != []:
                 json_elem["created"] = created_dict
@@ -65,7 +79,7 @@ class map_element(object):
             json_elem["type"] = elem.tag
             
             self.element = json_elem            
-        
+        #If element is not a 'node' or 'way', discards it
         else:
             self.element = None
             
@@ -74,15 +88,20 @@ class map_element(object):
         return self.element
             
     def split_field(self, newfield, sourcefield, newfield_re_list):
-       
+        '''
+        For each regex expresion in 'newfield_re_list', searches in 'sourcefield' 
+        (if the element has an 'address' field that contains it) for a match.
+        Reallocates the match to 'newfield' in 'address' and deletes 'sourcefield'
+        if nothing is left.
+        '''
         if 'address' in self.element.keys():
             if sourcefield in self.element['address'].keys():
-                source = self.element['address'][sourcefield]           
+                source_value = self.element['address'][sourcefield]           
                 for regex in newfield_re_list:
-                    expression = re.search(regex, source, re.IGNORECASE)
+                    expression = re.search(regex, source_value, re.IGNORECASE)
                     if expression:
-                        source = source[:expression.start()] + source[expression.end():]
-                        self.element['address'][sourcefield] = source.strip().strip(',')
+                        source_value = source_value[:expression.start()] + source_value[expression.end():]
+                        self.element['address'][sourcefield] = source_value.strip().strip(',')
                         if self.element['address'][sourcefield] == '':
                             del self.element['address'][sourcefield]
                         if newfield not in self.element['address'].keys():
@@ -91,9 +110,14 @@ class map_element(object):
                             self.element['address'][newfield] += ' ' + expression.group()
         
     def replace_in_field(self, field, replace_mapping):
-  
-        if 'address' in self.element.keys():
-            
+        '''
+        Replaces in the 'address' 'field' of the element (if the element has it) 
+        the leftmost match of each regex expression in 'replace_mapping' keys for 
+        the respective 'replace_mapping' value.
+        If 'address' is a key and not a dictionary, the 'replace_mapping' key is
+        'address'.
+        '''
+        if 'address' in self.element.keys():          
             if type(self.element['address']) == str:
                 self.element['address'] = replace_mapping['address']
                 
@@ -106,7 +130,10 @@ class map_element(object):
                         self.element['address'][field] = re.sub(expression.group(), replace_mapping[key], field_value)
                         
     def limit_field(self, field, limit_pattern):
-
+        '''
+        Limits the 'address' 'field' of the element to an expression that matches
+        the regex expression 'limit_pattern', discarding everything else.
+        '''
         if 'address' in self.element.keys():
             if field in self.element['address'].keys():
                 field_value = self.element['address'][field]
@@ -114,15 +141,26 @@ class map_element(object):
                 self.element['address'][field] = clean_field
     
     def remove_from_field(self, field, remove_pattern):
- 
+        '''
+        Removes from the 'address' 'field' of the element an expression that
+        matches the regex expression 'remove_pattern'.
+        '''
         if 'address' in self.element.keys():
             if field in self.element['address'].keys():
                 field_value = self.element['address'][field]
                 remove_string = re.search(remove_pattern, field_value, re.IGNORECASE) 
                 if remove_string:
                     field_value = field_value[:remove_string.start()] + field_value[remove_string.end():]
-                self.element['address'][field] = field_value.upper().strip()          
-                      
+                self.element['address'][field] = field_value.strip()          
+     
+    def capitalize_field(self, field):
+        '''
+        Capitalizes every letter in the field.
+        '''
+        if 'address' in self.element.keys():
+            if field in self.element['address'].keys():        
+                self.element['address'][field] = self.element['address'][field].upper()
+                
 def clean(mapElem):
     '''
     Performs all the data reallocation and cleaning tasks on a given  element.
@@ -171,9 +209,11 @@ def clean(mapElem):
     mapElem.limit_field('housenumber', r'([0-9]{1,5})')                                
     #Clean 'suite', removing the "Suite" expression, as well as its abbreviations
     mapElem.remove_from_field('suite', r'Suite|Ste')
+    mapElem.capitalize_field('suite')
     #Clean 'door', removing the character "#"
     mapElem.remove_from_field('door', r'#')
-
+    mapElem.capitalize_field('door')
+    
 if __name__ == "__main__":
     
     mapfile = map_file('las_vegas_nevada.osm')    
