@@ -84,7 +84,9 @@ class map_element(object):
             self.element = None
             
     def get_element(self):
-      
+        '''
+        Returns the element.
+        '''     
         return self.element
             
     def split_field(self, newfield, sourcefield, newfield_re_list):
