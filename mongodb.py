@@ -76,7 +76,7 @@ if __name__ == "__main__":
                                   {'$group': {'_id':'$address.city', 'count': {'$sum': 1}}}, 
                                   {'$sort': {'count': -1}}])) 
     #Get number of documents per 'address.postcode' in descending order that have 'address.state' = Nevada
-    #and 'address.city' = Las Vegas
+    #and 'address.city' = Las Vegas (top 5 postcodes)
     pprint.pprint(db.aggregation([{'$match': {'address.postcode': {'$exists': 1}, 
                                    'address.city': 'Las Vegas', 'address.state': 'Nevada'}}, 
                                   {'$group': {'_id':'$address.postcode', 'count': {'$sum': 1}}}, 
