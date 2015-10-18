@@ -11,4 +11,4 @@ DataWrangling
 
 **Project Summary**
 
-The goal of this project was to audit the OpenStreetMaps’ Las Vegas dataset and clean the problems identified. Then, after converting the data from XML to JSON, the processed data was imported to a MongoDB database. Finally, queries were run against the database to analyze specific features of the dataset.
+The goal of this project was to audit the OpenStreetMaps’ Las Vegas dataset and clean the problems identified. Then, after converting the data from XML to JSON, the processed data was imported to a MongoDB database. Finally, queries were run against the database to obtain an overview of the dataset.
