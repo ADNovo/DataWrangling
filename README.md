@@ -7,7 +7,7 @@ DataWrangling
 
 2 - clean_data: Data format transformation and cleaning / map_element class
 
-3 - mongoDB: Data database import and querying / db_collection class
+3 - mongoDB: Data import to database and querying
 
 **Project Summary**
 
