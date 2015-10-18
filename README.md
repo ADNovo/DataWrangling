@@ -5,7 +5,7 @@ DataWrangling
 
 1 - audit_raw_data: Data audit / map_file class
 
-2 - clean_data: Data cleaning / map_element class
+2 - clean_data: Data format transformation and cleaning / map_element class
 
 3 - mongoDB: Data database import and querying / db_collection class
 
