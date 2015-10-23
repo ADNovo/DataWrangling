@@ -1,13 +1,8 @@
-DataWrangling
-=============
-
 **Data Wrangling with MongoDB Project** (Nanodegree in Data Science - Udacity)
 
-1 - audit_raw_data: Data audit / map_file class
-
-2 - clean_data: Data format transformation and cleaning / map_element class
-
-3 - mongoDB: Data import to database and querying
+**audit_raw_data.py:** Data audit / map_file class  
+**clean_data.py**: Data format transformation and cleaning / map_element class  
+**mongoDB.py:** Data import to database and querying
 
 **Project Summary**
 
